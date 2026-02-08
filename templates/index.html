@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Readmore</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="fireplace">
+    <div class="chimney"></div>
+    <main class="app">
+      <header class="header">
+        <h1 class="logo">Readmore</h1>
+        <p class="tagline">Find your next book by the fire.</p>
+      </header>
+
+      <section class="search-panel panel">
+        <h2 class="section-title">Search</h2>
+        <div class="search-row">
+          <input type="text" id="searchInput" class="input" placeholder="Title, author, or topic…" />
+          <button type="button" id="searchBtn" class="btn btn-primary">Search</button>
+        </div>
+        <p id="searchError" class="error" aria-live="polite"></p>
+      </section>
+
+      <section class="results-panel panel">
+        <h2 class="section-title">Results</h2>
+        <div id="resultsList" class="cards"></div>
+        <p id="resultsEmpty" class="empty">Search for books to see results.</p>
+      </section>
+
+      <section class="shelf-panel panel">
+        <h2 class="section-title">Shelf · My Collection</h2>
+        <p id="shelfEmpty" class="empty">Books you add to your collection will appear here.</p>
+        <div id="shelfList" class="shelf-books"></div>
+      </section>
+
+      <section class="recommend-panel panel">
+        <h2 class="section-title">Recommendations</h2>
+        <p id="recommendMessage" class="empty">Add books to your collection to get personalized recommendations.</p>
+        <div id="recommendList" class="cards"></div>
+      </section>
+    </main>
+    <div class="hearth"></div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

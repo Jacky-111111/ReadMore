@@ -179,3 +179,21 @@ Generate all files with working code. The UI doesn’t need to look fancy, but s
 
 If you want, I can also give you a ready-made README 3–5 sentence API explanation + PROMPT_HISTORY sample tailored to this exact architecture.
 
+
+
+
+--------------------------------------------------------------------------------
+
+Then, I pasted the prompt into Cursor, and gave it some instructions related to the graphical design:
+
+Please use the following color palette: 
+9b2226
+ae2012
+bb3e03
+ca6702
+ee9b00
+e9d8a6
+
+
+Make the whole interface as if it's in front of a fireplace with a chimney. A warm place in cold winter that someone would like to stay and read a book.
+Make things pixel style but refined.
