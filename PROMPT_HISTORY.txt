@@ -1,0 +1,181 @@
+I used ChatGPT 5.2 Thinking mode to generate a well-designed prompt for Cursor to begin with.
+Cursor selected its model on its own.
+
+
+
+Initial Conversation with ChatGPT:
+
+I asked:
+I'm working on a vibe-coding HW with those instructions (and I pasted the instructions from the 15-113 website).
+I wish to develop a web-based product called "ReadMore" which can obtain book information through the public API of Internet Archive Open Library, and identify the user's preferences in some way, then recommend books that the user likes, such as books with similar genres, lengths, or authors.
+I'm more farmiliar with FastAPI and Render in the pipeline.
+Please give me a detailed prompt for building this and I will give it to Cursor.
+
+
+ChatGPT's answer:
+Here’s an English prompt you can paste into Cursor. It’s written to produce a complete, runnable FastAPI + simple web UI project for “Readmore” using Open Library’s public (no-key) API, with content-based recommendations and localStorage for user preferences.
+
+⸻
+
+Cursor Prompt (English)
+
+Build a small web app called Readmore using FastAPI as the backend and a simple frontend (HTML/CSS/vanilla JS) served by FastAPI. The app uses the Internet Archive Open Library public API (no API key) to search books and recommend books based on the user’s likes/dislikes/saves.
+
+Core Requirements
+	1.	Backend: FastAPI
+
+	•	Serve a static frontend from / (an HTML page) and static assets from /static.
+	•	Provide JSON API endpoints:
+	•	GET /api/search?q=...&limit=20
+	•	Calls Open Library Search API: https://openlibrary.org/search.json
+	•	Use fields= to request only needed fields.
+	•	Return a normalized list of book items.
+	•	GET /api/work/{work_id}
+	•	Calls https://openlibrary.org/works/{work_id}.json
+	•	Return normalized work details (title, description if available, subjects if available, author keys if available).
+	•	GET /api/recommend
+	•	Accepts a user profile payload via query or POST (preferred: POST /api/recommend with JSON body).
+	•	Generates recommendations by calling Open Library Subjects API for the user’s top subjects.
+	•	Returns a ranked list with explanations (“recommended because you like X, Y”).
+	•	Add CORS support so the frontend can call the API even if served elsewhere (but in this project serve frontend from same origin anyway).
+	•	Add basic caching on outbound Open Library requests (in-memory dict with TTL, e.g., 60 seconds) to avoid repeated calls.
+
+	2.	Frontend
+Single-page UI with 3 sections:
+
+	•	Search Panel: input box + Search button.
+	•	Results List: cards showing cover, title, author(s), first publish year, a few subjects.
+	•	Each card has buttons: 👍 Like, 👎 Dislike, ✅ Save.
+	•	For You (Recommendations): a panel showing recommended books as cards, each with:
+	•	cover, title, author(s), year
+	•	“Why recommended:” list (matched subjects and/or authors)
+	•	a score indicator (optional)
+
+Use localStorage to store:
+	•	likedWorks[] (work IDs like OL...W)
+	•	dislikedWorks[]
+	•	savedWorks[]
+	•	profile object with weights:
+
+profile = {
+  subjects: { "fantasy": 6, "mystery": 3 },
+  authors:  { "OL23919A": 5 },
+  length:   { "short": 1, "medium": 2, "long": 0 },
+  era:      { "classic": 1, "modern": 3 }
+}
+
+
+
+	3.	Recommendation Algorithm (Content-Based)
+Implement a simple but explainable recommender:
+
+Feature extraction from an item
+
+From search results or work details:
+	•	work_id (key)
+	•	title
+	•	author_name and author_key (prefer keys)
+	•	subjects (list of strings; may be missing)
+	•	first_publish_year (may be missing)
+	•	optional: edition_count
+
+Profile update rules
+
+When the user clicks:
+	•	👍 Like:
+	•	add work_id to likedWorks, remove from disliked if present
+	•	for each subject: profile.subjects[subject] += 2
+	•	for each author_key: profile.authors[author_key] += 3
+	•	update era preference:
+	•	if year < 1980 => classic +1
+	•	else => modern +1
+	•	👎 Dislike:
+	•	add to dislikedWorks, remove from liked if present
+	•	subjects -1, authors -2
+	•	✅ Save:
+	•	add to savedWorks (no weight change or small +1 to subjects)
+
+Normalize subject strings (lowercase, trim) and keep only top N weights in storage (e.g., top 50) to avoid unbounded growth.
+
+Candidate generation
+
+From the user profile, pick top 3–5 subjects by weight (ignore non-positive weights).
+For each subject, call:
+	•	https://openlibrary.org/subjects/{subject}.json?limit=50
+Collect works into a candidate pool. Deduplicate by work_id.
+
+Optionally also seed candidates from top 1–2 authors using Search API (author query).
+
+Scoring
+
+For each candidate item:
+	•	score = 2 * sum(subjectWeights for subjects in item)
+	•	+ 3 * authorWeight if author_key matches
+	•	+ 0.5 * eraMatch (classic/modern based on year)
+	•	Strongly penalize items already seen:
+	•	if work_id in liked/disliked/saved: skip entirely (filter out)
+Return top 20 by score.
+
+Diversity constraint
+
+Avoid all recommendations being from a single subject:
+	•	At most 6 items in the final list per top subject (approximate by checking the first matched subject).
+Or implement a simple round-robin merge across subject-specific ranked lists.
+
+Explainability
+
+For each recommendation, return:
+	•	reasons: e.g., matched subjects (top 2) and matched author (if any)
+	•	Example: ["matches your interest: fantasy (+6)", "matches your interest: mystery (+3)"]
+
+	4.	Data Normalization
+Create a consistent book object shape returned by backend:
+
+{
+  "work_id": "OL123W",
+  "title": "...",
+  "authors": [{"name":"...", "key":"OL...A"}],
+  "first_publish_year": 2001,
+  "subjects": ["fantasy","magic"],
+  "cover_url": "https://covers.openlibrary.org/b/id/12345-M.jpg",
+  "source": "search|subject"
+}
+
+Cover URL:
+	•	Prefer cover_i from search/subject items if present:
+https://covers.openlibrary.org/b/id/{cover_i}-M.jpg
+	•	Otherwise omit cover_url or use a placeholder.
+
+	5.	Project Structure
+Create:
+
+	•	main.py (FastAPI app)
+	•	services/openlibrary.py (HTTP calls, caching, normalization helpers)
+	•	templates/index.html
+	•	static/app.js
+	•	static/styles.css
+	•	requirements.txt
+
+Use httpx for HTTP calls (async) and jinja2 templates or just return static HTML. Keep it simple and runnable.
+	6.	Run Instructions
+Include in README:
+
+	•	python -m venv venv
+	•	pip install -r requirements.txt
+	•	uvicorn main:app --reload
+	•	open http://127.0.0.1:8000
+
+	7.	Edge Cases
+
+	•	Handle missing subjects/authors/year gracefully.
+	•	Handle Open Library request failures (timeouts, 5xx). Return friendly error JSON and show message in UI.
+	•	Rate-limiting: avoid loops; caching helps.
+
+Deliverables
+
+Generate all files with working code. The UI doesn’t need to look fancy, but should be clean and interactive. Ensure the recommender changes after the user likes/dislikes several books. Make sure everything works end-to-end locally.
+
+⸻
+
+If you want, I can also give you a ready-made README 3–5 sentence API explanation + PROMPT_HISTORY sample tailored to this exact architecture.
+
