@@ -11,14 +11,16 @@ A small web app for discovering books and getting content-based recommendations.
 
 ## Run locally
 
+Please use the project’s virtual environment before running the app so the correct Python and dependencies are used:
+
 ```bash
 python -m venv venv
 source venv/bin/activate   # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --reload
+python main.py
 ```
 
-Then open: **http://127.0.0.1:8000**
+Then open: **http://127.0.0.1:8001**
 
 ## Tech stack
 
@@ -37,12 +39,12 @@ From the project root (with dependencies installed):
 python main.py
 ```
 
-This starts the app on **http://0.0.0.0:8000** (all interfaces). For production you can run it behind a reverse proxy (e.g. Nginx) or use a process manager (e.g. systemd, Supervisor). No database or env vars are required; the app only talks to Open Library and serves static assets.
+This starts the app on **http://0.0.0.0:8001** (all interfaces, port 8001). For production you can run it behind a reverse proxy (e.g. Nginx) or use a process manager (e.g. systemd, Supervisor). No database or env vars are required; the app only talks to Open Library and serves static assets.
 
-Optional: run with hot-reload during development:
+Optional: run with hot-reload during development (same port):
 
 ```bash
-uvicorn main:app --reload
+uvicorn main:app --reload --port 8001
 ```
 
 ## Project structure
@@ -62,3 +64,7 @@ uvicorn main:app --reload
 | POST | `/api/recommend` | Get recommendations; body: `{ likedWorks, dislikedWorks, savedWorks, profile }`. Returns up to 60 items. |
 
 Recommendations are scored from your profile (subjects, authors, era) and exclude already liked/disliked/saved works.
+
+### How the API is called
+
+The frontend (`static/app.js`) calls the API with the browser’s built-in **fetch** API; no extra HTTP or API client libraries are used. **Search** is requested with GET query parameters `q` (search string) and `limit` (max results, default 20); the response is JSON in the form `{ "results": [ ... ] }` where each item is a normalized book object (title, authors, work_id, subjects, cover, etc.). **Work details** are requested with GET `/api/work/{work_id}` and return a single JSON object with full work metadata. **Recommendations** are requested with POST `/api/recommend` with a JSON body containing `likedWorks`, `dislikedWorks`, `savedWorks` (arrays of work IDs), and `profile` (object with subject/author/era weights); the response is `{ "recommendations": [ ... ], "message"?: string }` with scored book objects and optional human-readable message. All responses are JSON; errors use HTTP status codes and an optional `detail` field in the body.
