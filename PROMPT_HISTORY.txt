@@ -2,6 +2,8 @@ I used ChatGPT 5.2 Thinking mode to generate a well-designed prompt for Cursor t
 Cursor selected its model on its own.
 
 
+--------------------------------------------------------------------------------
+
 
 Initial Conversation with ChatGPT:
 
@@ -180,11 +182,10 @@ Generate all files with working code. The UI doesn’t need to look fancy, but s
 If you want, I can also give you a ready-made README 3–5 sentence API explanation + PROMPT_HISTORY sample tailored to this exact architecture.
 
 
-
-
 --------------------------------------------------------------------------------
 
-Then, I pasted the prompt into Cursor, and gave it some instructions related to the graphical design:
+
+Then, I pasted the prompt into Cursor, along with some instructions related to the graphical design:
 
 Please use the following color palette: 
 9b2226
