@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Readmore</title>
+  <title>ReadMore</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <link rel="stylesheet" href="/static/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,41 +12,86 @@
 </head>
 <body>
   <div class="fireplace">
-    <div class="chimney"></div>
-    <main class="app">
-      <header class="header">
-        <h1 class="logo">Readmore</h1>
+    <header class="chimney">
+      <div class="chimney-center">
+        <h1 class="logo">ReadMore</h1>
         <p class="tagline">Find your next book by the fire.</p>
-      </header>
-
-      <section class="search-panel panel">
-        <h2 class="section-title">Search</h2>
-        <div class="search-row">
-          <input type="text" id="searchInput" class="input" placeholder="Title, author, or topic…" />
-          <button type="button" id="searchBtn" class="btn btn-primary">Search</button>
+      </div>
+      <button type="button" class="btn btn-info" id="infoBtn" title="About recommendations &amp; privacy" aria-label="Info">i</button>
+    </header>
+    <div class="info-overlay" id="infoOverlay" aria-hidden="true">
+      <div class="info-modal panel">
+        <h2 class="section-title">About ReadMore</h2>
+        <div class="info-content">
+          <h3>Recommendation algorithm</h3>
+          <p>Recommendations are <strong>content-based</strong>: we look at the subjects and authors of the books you like or add to your collection, find more books in those subjects (via Open Library), score each candidate, and show the top picks with short reasons. We limit how many books come from any one subject so the list stays varied.</p>
+          <h4>How your actions change your profile</h4>
+          <ul>
+            <li><strong>👍 Like</strong>: each subject +2, each author +3; if the book was published before 1980 we add +1 to “classic”, otherwise +1 to “modern”.</li>
+            <li><strong>👎 Dislike</strong>: each subject −1, each author −2.</li>
+            <li><strong>✅ Add to collection</strong>: each subject +1 (no author or era change).</li>
+          </ul>
+          <h4>How we score each recommendation</h4>
+          <ul>
+            <li>For each <strong>subject</strong> the book has that you like: add <strong>2 × your subject weight</strong> to the score.</li>
+            <li>If the book’s <strong>author</strong> is one you like: add <strong>3 × your author weight</strong> to the score.</li>
+            <li>If the book’s <strong>era</strong> (classic = before 1980, modern = 1980+) matches your preference: add <strong>0.5 × your era weight</strong> to the score.</li>
+            <li>Books you’ve already liked, disliked, or saved are excluded from recommendations.</li>
+          </ul>
+          <h3>Privacy &amp; data</h3>
+          <p>We use the <strong>public Open Library API</strong> (no API key required). All of your data—likes, dislikes, and collection—is stored <strong>only in your browser</strong> (localStorage). We do not send your preferences to any server; only anonymous book searches and recommendation requests go to Open Library. Your reading tastes stay on your device and are not shared or stored elsewhere.</p>
         </div>
-        <p id="searchError" class="error" aria-live="polite"></p>
-      </section>
-
-      <section class="results-panel panel">
-        <h2 class="section-title">Results</h2>
-        <div id="resultsList" class="cards"></div>
-        <p id="resultsEmpty" class="empty">Search for books to see results.</p>
-      </section>
-
-      <section class="shelf-panel panel">
-        <h2 class="section-title">Shelf · My Collection</h2>
-        <p id="shelfEmpty" class="empty">Books you add to your collection will appear here.</p>
-        <div id="shelfList" class="shelf-books"></div>
-      </section>
-
-      <section class="recommend-panel panel">
-        <h2 class="section-title">Recommendations</h2>
-        <p id="recommendMessage" class="empty">Add books to your collection to get personalized recommendations.</p>
-        <div id="recommendList" class="cards"></div>
-      </section>
-    </main>
+        <button type="button" class="btn btn-primary info-close" id="infoClose">Close</button>
+      </div>
+    </div>
+    <div class="book-detail-overlay" id="bookDetailOverlay" aria-hidden="true">
+      <div class="book-detail-modal panel">
+        <div class="book-detail-layout">
+          <div class="book-detail-cover" id="bookDetailCover"></div>
+          <div class="book-detail-main">
+            <h2 class="book-detail-title" id="bookDetailTitle"></h2>
+            <p class="book-detail-meta" id="bookDetailMeta"></p>
+            <p class="book-detail-isbn" id="bookDetailIsbn"></p>
+            <p class="book-detail-genre" id="bookDetailGenre"></p>
+            <div class="book-detail-description" id="bookDetailDescription"></div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary book-detail-close" id="bookDetailClose">Close</button>
+      </div>
+    </div>
+    <div class="app layout-three-col">
+      <aside class="col-shelf">
+        <section class="shelf-panel panel">
+          <h2 class="section-title">Shelf · My Collection</h2>
+          <p id="shelfEmpty" class="empty">Books you add to your collection will appear here.</p>
+          <div id="shelfList" class="shelf-books"></div>
+        </section>
+      </aside>
+      <div class="col-center">
+        <section class="search-panel panel">
+          <h2 class="section-title">Search</h2>
+          <div class="search-row">
+            <input type="text" id="searchInput" class="input" placeholder="Title, author, or topic…" />
+            <button type="button" id="searchBtn" class="btn btn-primary">Search</button>
+          </div>
+          <p id="searchError" class="error" aria-live="polite"></p>
+        </section>
+        <section class="results-panel panel collapsed" id="resultsPanel" aria-hidden="true">
+          <h2 class="section-title">Results</h2>
+          <div id="resultsList" class="cards"></div>
+          <p id="resultsEmpty" class="empty">Search for books to see results.</p>
+        </section>
+      </div>
+      <aside class="col-recommend">
+        <section class="recommend-panel panel">
+          <h2 class="section-title">Recommendations</h2>
+          <p id="recommendMessage" class="empty">Add books to your collection to get personalized recommendations.</p>
+          <div id="recommendList" class="cards"></div>
+        </section>
+      </aside>
+    </div>
     <div class="hearth"></div>
+    <p class="copyright">© Jack Yu. Created with help of ChatGPT and Cursor.</p>
   </div>
 
   <script src="/static/app.js"></script>

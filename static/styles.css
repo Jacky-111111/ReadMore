@@ -1,4 +1,4 @@
-/* Readmore — Fireplace theme, pixel-style refined
+/* ReadMore — Fireplace theme, pixel-style refined
    Palette: #9b2226 #ae2012 #bb3e03 #ca6702 #ee9b00 #e9d8a6
 */
 :root {
@@ -20,9 +20,10 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   font-family: var(--font-ui);
   font-size: 14px;
   color: var(--cream);
@@ -30,31 +31,235 @@ body {
 }
 
 .fireplace {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(ellipse 80% 50% at 50% 100%, var(--flame) 0%, var(--ember) 20%, var(--ember-dark) 40%, transparent 70%),
     linear-gradient(180deg, var(--bg-dark) 0%, #1a0e08 100%);
 }
 
 .chimney {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 120px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  height: 72px;
+  padding: 8px 48px 8px 16px;
   background: linear-gradient(180deg, var(--ember-dark) 0%, var(--shadow) 100%);
   border-bottom: var(--pixel) solid var(--gold);
-  z-index: 0;
+  z-index: 10;
   box-shadow: 0 var(--pixel) 0 var(--shadow);
 }
 
-.hearth {
+.chimney-center {
+  text-align: center;
+}
+
+.btn-info {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--bg-dark);
+  border: var(--pixel) solid var(--gold);
+  color: var(--cream);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.btn-info:hover {
+  background: var(--orange);
+  box-shadow: 0 0 10px rgba(238, 155, 0, 0.4);
+}
+
+/* Info overlay & modal */
+.info-overlay {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.info-overlay.visible {
+  display: flex;
+}
+
+.info-modal {
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.info-content {
+  margin-bottom: 16px;
+}
+
+.info-content h3 {
+  font-family: var(--font-pixel);
+  font-size: 1.1rem;
+  color: var(--gold);
+  margin: 12px 0 6px;
+}
+
+.info-content h3:first-child {
+  margin-top: 0;
+}
+
+.info-content h4 {
+  font-size: 12px;
+  color: var(--orange);
+  margin: 10px 0 4px;
+  font-weight: 600;
+}
+
+.info-content ul {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cream);
+}
+
+.info-content li {
+  margin-bottom: 4px;
+}
+
+.info-content p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cream);
+}
+
+.info-close {
+  width: 100%;
+}
+
+/* Book detail overlay & modal */
+.book-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.book-detail-overlay.visible {
+  display: flex;
+}
+
+.book-detail-modal {
+  width: 560px;
+  max-width: calc(100vw - 40px);
+  height: 85vh;
+  max-height: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.book-detail-layout {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-items: flex-start;
+}
+
+.book-detail-cover {
+  flex-shrink: 0;
+  width: 140px;
+  height: 210px;
+  background: var(--ember-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--cream);
+  opacity: 0.7;
+  overflow: hidden;
+}
+
+.book-detail-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-detail-main {
+  flex: 1;
+  min-width: 0;
+  min-height: min-content;
+}
+
+.book-detail-title {
+  font-family: var(--font-pixel);
+  font-size: 1.4rem;
+  color: var(--gold);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.book-detail-meta,
+.book-detail-isbn,
+.book-detail-genre {
+  font-size: 13px;
+  color: var(--cream);
+  margin: 0 0 6px;
+  opacity: 0.95;
+}
+
+.book-detail-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cream);
+  margin-top: 12px;
+  opacity: 0.9;
+  overflow-wrap: break-word;
+}
+
+.book-detail-close {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.card.clickable,
+.shelf-book.clickable {
+  cursor: pointer;
+}
+
+.hearth {
+  flex-shrink: 0;
+  height: 48px;
   background: repeating-linear-gradient(
     90deg,
     var(--ember-dark) 0px,
@@ -66,53 +271,129 @@ body {
   z-index: 0;
 }
 
+.copyright {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  margin: 0;
+  font-size: 11px;
+  color: var(--cream);
+  opacity: 0.8;
+  z-index: 2;
+}
+
+/* Three-column fixed layout: left shelf | center search+results | right recommend */
+.app.layout-three-col {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(280px, 2fr) minmax(160px, 1fr);
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.col-shelf, .col-center, .col-recommend {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-shelf .panel, .col-recommend .panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.col-recommend #recommendMessage {
+  flex-shrink: 0;
+}
+
+.col-shelf .shelf-books, .col-recommend .cards {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.col-center {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.col-center .search-panel {
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 12px;
+}
+
+/* Results panel: collapsed when not searching */
+.results-panel.collapsed {
+  display: none !important;
+}
+
+.results-panel:not(.collapsed) {
+  width: 100%;
+  max-width: 420px;
+  max-height: 40vh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.results-panel:not(.collapsed) .cards {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
 .app {
   position: relative;
   z-index: 1;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px 16px 80px;
 }
 
-.header {
-  text-align: center;
-  margin-bottom: 28px;
-}
-
+/* Logo and tagline live in .chimney (top bar) */
 .logo {
   font-family: var(--font-pixel);
-  font-size: 2.5rem;
+  font-size: 1.75rem;
   font-weight: 400;
   color: var(--gold);
   text-shadow: var(--pixel) var(--pixel) 0 var(--shadow);
   margin: 0;
   letter-spacing: 2px;
+  line-height: 1.2;
 }
 
 .tagline {
   font-family: var(--font-pixel);
-  font-size: 1.2rem;
+  font-size: 0.95rem;
   color: var(--cream);
-  opacity: 0.9;
-  margin: 4px 0 0;
+  opacity: 0.95;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .panel {
   background: var(--bg-panel);
   border: var(--pixel) solid var(--orange);
   border-radius: 0;
-  padding: 16px;
-  margin-bottom: 20px;
+  padding: 12px;
   box-shadow: 0 0 0 var(--pixel) var(--shadow), inset 0 0 20px rgba(0,0,0,0.3);
 }
 
 .section-title {
   font-family: var(--font-pixel);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: var(--gold);
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   border-bottom: 2px solid var(--flame);
-  padding-bottom: 6px;
+  padding-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .search-row {
@@ -169,7 +450,21 @@ body {
 }
 
 .btn-like { background: var(--ember); border-color: var(--gold); color: var(--cream); }
+.btn-like.active {
+  box-shadow: 0 0 12px var(--gold), 0 0 20px rgba(238, 155, 0, 0.5);
+  border-color: var(--gold);
+  background: var(--orange);
+}
+.btn-like.active { cursor: pointer; }
+
 .btn-dislike { background: var(--ember-dark); border-color: var(--flame); color: var(--cream); }
+.btn-dislike.active {
+  box-shadow: 0 0 12px var(--flame), 0 0 20px rgba(187, 62, 3, 0.5);
+  border-color: var(--orange);
+  background: var(--flame);
+}
+.btn-dislike.active { cursor: pointer; }
+
 .btn-save { background: var(--orange); border-color: var(--gold); color: var(--cream); }
 
 .error {
@@ -187,14 +482,20 @@ body {
 
 .cards {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 12px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.col-recommend .cards {
+  flex-direction: column;
 }
 
 .card {
   width: 100%;
   max-width: 280px;
+  flex-shrink: 0;
   background: var(--bg-dark);
   border: var(--pixel) solid var(--flame);
   padding: 12px;
@@ -268,12 +569,24 @@ body {
 .card-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
 }
 
 .card-actions .btn {
   padding: 6px 10px;
   font-size: 12px;
+}
+
+.rate-buttons {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.btn-icon {
+  min-width: 2.2em;
+  padding: 6px 8px;
+  font-size: 1rem;
 }
 
 .recommend-card .card {
@@ -309,9 +622,10 @@ body {
 .shelf-books {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
-  align-items: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  align-items: flex-start;
+  align-content: flex-start;
 }
 
 .shelf-book {

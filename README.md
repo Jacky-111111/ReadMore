@@ -1,4 +1,4 @@
-# Readmore
+# ReadMore
 
 A small web app for discovering books and getting content-based recommendations. Built with **FastAPI** (backend) and a simple **HTML/CSS/vanilla JS** frontend. Uses the [Open Library](https://openlibrary.org) public API (no API key required).
 

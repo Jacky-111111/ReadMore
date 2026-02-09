@@ -1,5 +1,5 @@
 """
-Readmore: FastAPI backend serving search, work details, and content-based recommendations.
+ReadMore: FastAPI backend serving search, work details, and content-based recommendations.
 """
 from collections import defaultdict
 from pathlib import Path
@@ -16,7 +16,7 @@ from services.openlibrary import (
     search as ol_search,
 )
 
-app = FastAPI(title="Readmore", version="1.0.0")
+app = FastAPI(title="ReadMore", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

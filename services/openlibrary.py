@@ -153,7 +153,14 @@ def normalize_work(work_id: str, data: dict[str, Any]) -> dict[str, Any]:
             isbn_list.extend([str(x).strip() for x in ids[:10] if x and str(x).strip()])
         elif ids:
             isbn_list.append(str(ids).strip())
-    isbn_list = isbn_list[:15]
+    identifiers = data.get("identifiers") or {}
+    for id_type in ("isbn_10", "isbn_13", "isbn"):
+        ids = identifiers.get(id_type)
+        if isinstance(ids, list):
+            isbn_list.extend([str(x).strip() for x in ids[:10] if x and str(x).strip()])
+        elif ids:
+            isbn_list.append(str(ids).strip())
+    isbn_list = list(dict.fromkeys(isbn_list))[:15]
 
     return {
         "work_id": work_id,

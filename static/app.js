@@ -1,5 +1,5 @@
 /**
- * Readmore — frontend: search, results, recommendations, localStorage profile
+ * ReadMore — frontend: search, results, recommendations, localStorage profile
  */
 
 const API = "";
@@ -153,11 +153,26 @@ function removeFromShelf(state, workId) {
   return { ...state, savedWorks, savedBooks };
 }
 
+function applyRemoveLike(state, workId) {
+  workId = (workId || "").trim();
+  if (!workId) return state;
+  const likedWorks = (state.likedWorks || []).filter((id) => id !== workId);
+  return { ...state, likedWorks };
+}
+
+function applyRemoveDislike(state, workId) {
+  workId = (workId || "").trim();
+  if (!workId) return state;
+  const dislikedWorks = (state.dislikedWorks || []).filter((id) => id !== workId);
+  return { ...state, dislikedWorks };
+}
+
 // ---------- DOM ----------
 
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
 const searchError = document.getElementById("searchError");
+const resultsPanel = document.getElementById("resultsPanel");
 const resultsList = document.getElementById("resultsList");
 const resultsEmpty = document.getElementById("resultsEmpty");
 const shelfList = document.getElementById("shelfList");
@@ -209,33 +224,43 @@ function renderCard(book, options = {}) {
   `;
 
   const actions = div.querySelector(".card-actions");
+  const rateWrap = document.createElement("div");
+  rateWrap.className = "rate-buttons";
   if (onLike !== false) {
     const likeBtn = document.createElement("button");
     likeBtn.type = "button";
-    likeBtn.className = "btn btn-like";
-    likeBtn.textContent = "👍 Like";
-    likeBtn.disabled = liked;
+    likeBtn.className = "btn btn-like btn-icon" + (liked ? " active" : "");
+    likeBtn.textContent = "👍";
+    likeBtn.title = liked ? "You liked this book (click to cancel)" : "Like this book";
     likeBtn.addEventListener("click", () => { onLike && onLike(book); });
-    actions.appendChild(likeBtn);
+    rateWrap.appendChild(likeBtn);
   }
   if (onDislike !== false) {
     const disBtn = document.createElement("button");
     disBtn.type = "button";
-    disBtn.className = "btn btn-dislike";
-    disBtn.textContent = "👎 Dislike";
-    disBtn.disabled = disliked;
+    disBtn.className = "btn btn-dislike btn-icon" + (disliked ? " active" : "");
+    disBtn.textContent = "👎";
+    disBtn.title = disliked ? "You disliked this book (click to cancel)" : "Dislike this book";
     disBtn.addEventListener("click", () => { onDislike && onDislike(book); });
-    actions.appendChild(disBtn);
+    rateWrap.appendChild(disBtn);
   }
+  if (rateWrap.children.length) actions.appendChild(rateWrap);
   if (onSave !== false) {
     const saveBtn = document.createElement("button");
     saveBtn.type = "button";
     saveBtn.className = "btn btn-save";
     saveBtn.textContent = "✅ Add to collection";
     saveBtn.disabled = saved;
-    saveBtn.addEventListener("click", () => { onSave && onSave(book); });
+    saveBtn.addEventListener("click", (e) => { e.stopPropagation(); onSave && onSave(book); });
     actions.appendChild(saveBtn);
   }
+
+  div.classList.add("clickable");
+  div.addEventListener("click", (e) => {
+    if (e.target.closest(".card-actions")) return;
+    openBookDetail(book);
+  });
+  rateWrap.querySelectorAll("button").forEach((btn) => btn.addEventListener("click", (e) => e.stopPropagation()));
 
   return div;
 }
@@ -251,12 +276,18 @@ function renderShelfBook(book) {
     <div class="shelf-book-info">
       <div class="shelf-book-title">${escapeHtml(book.title || "Unknown")}</div>
       <div class="shelf-book-meta">${escapeHtml(authorNames(book.authors))}${book.first_publish_year ? " · " + book.first_publish_year : ""}</div>
-      <button type="button" class="btn btn-remove">Remove from shelf</button>
+      <button type="button" class="btn btn-remove">Remove</button>
     </div>
   `;
-  div.querySelector(".btn-remove").addEventListener("click", () => {
-    updateStateAndUI(removeFromShelf(loadState(), book.work_id));
-  });
+  const removeBtn = div.querySelector(".btn-remove");
+  if (removeBtn) {
+    removeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      updateStateAndUI(removeFromShelf(loadState(), book.work_id));
+    });
+  }
+  div.classList.add("clickable");
+  div.addEventListener("click", () => openBookDetail(book));
   return div;
 }
 
@@ -272,6 +303,8 @@ async function doSearch() {
   const q = (searchInput.value || "").trim();
   if (!q) return;
   clearError();
+  resultsPanel.classList.remove("collapsed");
+  resultsPanel.setAttribute("aria-hidden", "false");
   resultsEmpty.classList.add("hidden");
   resultsList.innerHTML = "<span>Searching…</span>";
 
@@ -291,8 +324,16 @@ async function doSearch() {
     for (const book of data.results) {
       const card = renderCard(book, {
         showDetail: true,
-        onLike: () => { updateStateAndUI(applyLike(loadState(), book)); },
-        onDislike: () => { updateStateAndUI(applyDislike(loadState(), book)); },
+        onLike: () => {
+          const s = loadState();
+          if ((s.likedWorks || []).includes(book.work_id)) updateStateAndUI(applyRemoveLike(s, book.work_id));
+          else updateStateAndUI(applyLike(s, book));
+        },
+        onDislike: () => {
+          const s = loadState();
+          if ((s.dislikedWorks || []).includes(book.work_id)) updateStateAndUI(applyRemoveDislike(s, book.work_id));
+          else updateStateAndUI(applyDislike(s, book));
+        },
         onSave: () => { updateStateAndUI(applySave(loadState(), book)); },
       });
       resultsList.appendChild(card);
@@ -336,8 +377,16 @@ function refreshResultButtons() {
     const likeBtn = cardEl.querySelector(".btn-like");
     const disBtn = cardEl.querySelector(".btn-dislike");
     const saveBtn = cardEl.querySelector(".btn-save");
-    if (likeBtn) likeBtn.disabled = (state.likedWorks || []).includes(workId);
-    if (disBtn) disBtn.disabled = (state.dislikedWorks || []).includes(workId);
+    const liked = (state.likedWorks || []).includes(workId);
+    const disliked = (state.dislikedWorks || []).includes(workId);
+    if (likeBtn) {
+      likeBtn.classList.toggle("active", liked);
+      likeBtn.title = liked ? "You liked this book (click to cancel)" : "Like this book";
+    }
+    if (disBtn) {
+      disBtn.classList.toggle("active", disliked);
+      disBtn.title = disliked ? "You disliked this book (click to cancel)" : "Dislike this book";
+    }
     if (saveBtn) saveBtn.disabled = (state.savedWorks || []).includes(workId);
   });
 }
@@ -394,6 +443,119 @@ async function refreshRecommendations() {
     recommendMessage.classList.remove("hidden");
     recommendList.innerHTML = "";
   }
+}
+
+// ---------- Info modal ----------
+
+const infoBtn = document.getElementById("infoBtn");
+const infoOverlay = document.getElementById("infoOverlay");
+const infoClose = document.getElementById("infoClose");
+
+if (infoBtn && infoOverlay) {
+  infoBtn.addEventListener("click", () => {
+    infoOverlay.classList.add("visible");
+    infoOverlay.setAttribute("aria-hidden", "false");
+  });
+}
+if (infoClose && infoOverlay) {
+  infoClose.addEventListener("click", () => {
+    infoOverlay.classList.remove("visible");
+    infoOverlay.setAttribute("aria-hidden", "true");
+  });
+}
+if (infoOverlay) {
+  infoOverlay.addEventListener("click", (e) => {
+    if (e.target === infoOverlay) {
+      infoOverlay.classList.remove("visible");
+      infoOverlay.setAttribute("aria-hidden", "true");
+    }
+  });
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (bookDetailOverlay && bookDetailOverlay.classList.contains("visible")) {
+    closeBookDetail();
+  } else if (infoOverlay && infoOverlay.classList.contains("visible")) {
+    infoOverlay.classList.remove("visible");
+    infoOverlay.setAttribute("aria-hidden", "true");
+  }
+});
+
+// ---------- Book detail modal ----------
+
+const bookDetailOverlay = document.getElementById("bookDetailOverlay");
+const bookDetailCover = document.getElementById("bookDetailCover");
+const bookDetailTitle = document.getElementById("bookDetailTitle");
+const bookDetailMeta = document.getElementById("bookDetailMeta");
+const bookDetailIsbn = document.getElementById("bookDetailIsbn");
+const bookDetailGenre = document.getElementById("bookDetailGenre");
+const bookDetailDescription = document.getElementById("bookDetailDescription");
+const bookDetailClose = document.getElementById("bookDetailClose");
+
+function fillBookDetail(book) {
+  if (!bookDetailTitle || !bookDetailCover) return;
+  bookDetailTitle.textContent = book.title || "Unknown";
+  if (bookDetailMeta) bookDetailMeta.textContent = [
+    authorNames(book.authors),
+    book.first_publish_year ? "First published " + book.first_publish_year : "",
+  ].filter(Boolean).join(" · ");
+  if (bookDetailIsbn) bookDetailIsbn.textContent = (book.isbn && book.isbn.length)
+    ? "ISBN: " + book.isbn.join(", ")
+    : "ISBN: —";
+  if (bookDetailGenre) bookDetailGenre.textContent = (book.subjects && book.subjects.length)
+    ? "Genre / subjects: " + book.subjects.join(", ")
+    : "";
+  if (bookDetailDescription) bookDetailDescription.textContent = book.description || "Loading…";
+  bookDetailCover.innerHTML = "";
+  if (book.cover_url) {
+    const img = document.createElement("img");
+    img.src = book.cover_url;
+    img.alt = "";
+    bookDetailCover.appendChild(img);
+  } else {
+    bookDetailCover.textContent = "No cover";
+  }
+}
+
+function openBookDetail(book) {
+  if (!book || !book.work_id) return;
+  fillBookDetail(book);
+  if (bookDetailOverlay) {
+    bookDetailOverlay.classList.add("visible");
+    bookDetailOverlay.setAttribute("aria-hidden", "false");
+  }
+  fetch(`${API}/api/work/${encodeURIComponent(book.work_id)}`)
+    .then((res) => res.json())
+    .then((data) => {
+      const merged = {
+        ...book,
+        description: data.description ?? book.description,
+        isbn: (data.isbn && data.isbn.length) ? data.isbn : (book.isbn || []),
+        subjects: (data.subjects && data.subjects.length) ? data.subjects : (book.subjects || []),
+        first_publish_year: data.first_publish_year ?? book.first_publish_year,
+        cover_url: data.cover_url || book.cover_url,
+      };
+      fillBookDetail(merged);
+    })
+    .catch(() => {
+      if (bookDetailDescription) bookDetailDescription.textContent = book.description || "No description available.";
+    });
+}
+
+function closeBookDetail() {
+  if (bookDetailOverlay) {
+    bookDetailOverlay.classList.remove("visible");
+    bookDetailOverlay.setAttribute("aria-hidden", "true");
+  }
+}
+
+if (bookDetailClose && bookDetailOverlay) {
+  bookDetailClose.addEventListener("click", closeBookDetail);
+}
+if (bookDetailOverlay) {
+  bookDetailOverlay.addEventListener("click", (e) => {
+    if (e.target === bookDetailOverlay) closeBookDetail();
+  });
 }
 
 // ---------- Init ----------
