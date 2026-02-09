@@ -179,6 +179,12 @@ const shelfList = document.getElementById("shelfList");
 const shelfEmpty = document.getElementById("shelfEmpty");
 const recommendList = document.getElementById("recommendList");
 const recommendMessage = document.getElementById("recommendMessage");
+const recommendPagination = document.getElementById("recommendPagination");
+const recommendRefresh = document.getElementById("recommendRefresh");
+
+const RECOMMEND_PAGE_SIZE = 8;
+let currentRecommendations = [];
+let currentRecommendPage = 1;
 
 function clearError() {
   searchError.textContent = "";
@@ -305,6 +311,7 @@ async function doSearch() {
   clearError();
   resultsPanel.classList.remove("collapsed");
   resultsPanel.setAttribute("aria-hidden", "false");
+  document.body.classList.add("results-open");
   resultsEmpty.classList.add("hidden");
   resultsList.innerHTML = "<span>Searching…</span>";
 
@@ -426,22 +433,70 @@ async function refreshRecommendations() {
     if (data.message) {
       recommendMessage.textContent = data.message;
       recommendMessage.classList.remove("hidden");
+      currentRecommendations = [];
+      currentRecommendPage = 1;
+      if (recommendPagination) recommendPagination.classList.add("hidden");
+      return;
     }
     const recs = data.recommendations || [];
-    for (const book of recs) {
-      const card = renderCard(book, {
-        showReasons: true,
-        showScore: true,
-        onLike: false,
-        onDislike: false,
-        onSave: () => { updateStateAndUI(applySave(loadState(), book)); },
-      });
-      recommendList.appendChild(card);
-    }
+    currentRecommendations = recs;
+    currentRecommendPage = 1;
+    renderRecommendPage();
   } catch (e) {
     recommendMessage.textContent = e.message || "Could not load recommendations.";
     recommendMessage.classList.remove("hidden");
     recommendList.innerHTML = "";
+    currentRecommendations = [];
+    if (recommendPagination) recommendPagination.classList.add("hidden");
+  }
+}
+
+function renderRecommendPage() {
+  const total = currentRecommendations.length;
+  const totalPages = Math.max(1, Math.ceil(total / RECOMMEND_PAGE_SIZE));
+  const page = Math.min(Math.max(1, currentRecommendPage), totalPages);
+  currentRecommendPage = page;
+  const start = (page - 1) * RECOMMEND_PAGE_SIZE;
+  const slice = currentRecommendations.slice(start, start + RECOMMEND_PAGE_SIZE);
+
+  recommendList.innerHTML = "";
+  for (const book of slice) {
+    const card = renderCard(book, {
+      showReasons: true,
+      showScore: true,
+      onLike: false,
+      onDislike: false,
+      onSave: () => { updateStateAndUI(applySave(loadState(), book)); },
+    });
+    recommendList.appendChild(card);
+  }
+
+  if (recommendPagination) {
+    if (totalPages <= 1) {
+      recommendPagination.classList.add("hidden");
+      recommendPagination.innerHTML = "";
+      return;
+    }
+    recommendPagination.classList.remove("hidden");
+    recommendPagination.innerHTML = "";
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "btn btn-page";
+    prevBtn.textContent = "‹ Prev";
+    prevBtn.disabled = page <= 1;
+    prevBtn.addEventListener("click", () => { currentRecommendPage = page - 1; renderRecommendPage(); });
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "btn btn-page";
+    nextBtn.textContent = "Next ›";
+    nextBtn.disabled = page >= totalPages;
+    nextBtn.addEventListener("click", () => { currentRecommendPage = page + 1; renderRecommendPage(); });
+    const info = document.createElement("span");
+    info.className = "page-info";
+    info.textContent = `Page ${page} / ${totalPages}`;
+    recommendPagination.appendChild(prevBtn);
+    recommendPagination.appendChild(info);
+    recommendPagination.appendChild(nextBtn);
   }
 }
 
@@ -558,10 +613,170 @@ if (bookDetailOverlay) {
   });
 }
 
+// ---------- Reading timer ----------
+
+const timerPrev = document.getElementById("timerPrev");
+const timerNext = document.getElementById("timerNext");
+const timerScene = document.getElementById("timerScene");
+const pixelFireplace = document.getElementById("pixelFireplace");
+const pixelCandle = document.getElementById("pixelCandle");
+const candleWax = document.getElementById("candleWax");
+const timerDuration = document.getElementById("timerDuration");
+const timerDisplay = document.getElementById("timerDisplay");
+const timerStart = document.getElementById("timerStart");
+
+let timerMode = "fireplace";
+let timerRunning = false;
+let timerInterval = null;
+let timerElapsed = 0;
+let timerRemaining = 0;
+let timerTotalCandle = 600;
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+function showTimerMode() {
+  if (!pixelFireplace || !pixelCandle) return;
+  if (timerMode === "fireplace") {
+    pixelFireplace.classList.remove("hidden");
+    pixelCandle.classList.add("hidden");
+    if (timerDuration) timerDuration.classList.add("hidden");
+  } else {
+    pixelFireplace.classList.add("hidden");
+    pixelCandle.classList.remove("hidden");
+    if (timerDuration) timerDuration.classList.remove("hidden");
+    updateCandleHeight();
+  }
+}
+
+function updateCandleHeight() {
+  if (!candleWax || timerTotalCandle <= 0) return;
+  const pct = timerRunning ? (timerRemaining / timerTotalCandle) * 100 : 100;
+  candleWax.style.height = pct + "%";
+}
+
+function updateTimerDisplay() {
+  if (!timerDisplay) return;
+  if (timerMode === "fireplace") {
+    timerDisplay.textContent = formatTime(timerElapsed);
+  } else {
+    timerDisplay.textContent = formatTime(timerRemaining);
+    if (timerRunning) updateCandleHeight();
+  }
+}
+
+function timerTick() {
+  if (timerMode === "fireplace") {
+    timerElapsed++;
+    updateTimerDisplay();
+  } else {
+    timerRemaining--;
+    updateTimerDisplay();
+    if (timerRemaining <= 0) {
+      stopTimer();
+      timerDisplay.textContent = "0:00";
+    }
+  }
+}
+
+function startTimer() {
+  if (timerRunning) return;
+  timerRunning = true;
+  if (timerMode === "fireplace") {
+    timerElapsed = 0;
+    if (pixelFireplace) pixelFireplace.classList.add("burning");
+  } else {
+    timerRemaining = timerTotalCandle;
+    if (candleWax) candleWax.style.height = "100%";
+  }
+  updateTimerDisplay();
+  if (timerStart) {
+    timerStart.textContent = "Stop";
+  }
+  timerInterval = setInterval(timerTick, 1000);
+}
+
+function stopTimer() {
+  timerRunning = false;
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  if (pixelFireplace) pixelFireplace.classList.remove("burning");
+  if (timerStart) timerStart.textContent = "Start reading";
+  updateCandleHeight();
+}
+
+function cycleTimerMode(delta) {
+  if (timerRunning) return;
+  timerMode = timerMode === "fireplace" ? "candle" : "fireplace";
+  showTimerMode();
+  if (timerMode === "fireplace") {
+    timerDisplay.textContent = formatTime(0);
+  } else {
+    timerTotalCandle = getCandleSeconds();
+    timerRemaining = timerTotalCandle;
+    timerDisplay.textContent = formatTime(timerRemaining);
+  }
+}
+
+function getCandleSeconds() {
+  const active = timerDuration && timerDuration.querySelector(".btn-dur.active");
+  const min = active ? parseInt(active.dataset.min, 10) : 10;
+  return min * 60;
+}
+
+if (timerPrev) {
+  timerPrev.addEventListener("click", () => cycleTimerMode(-1));
+}
+if (timerNext) {
+  timerNext.addEventListener("click", () => cycleTimerMode(1));
+}
+if (timerStart) {
+  timerStart.addEventListener("click", () => {
+    if (timerRunning) stopTimer();
+    else startTimer();
+  });
+}
+if (timerDuration) {
+  timerDuration.querySelectorAll(".btn-dur").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (timerRunning) return;
+      timerDuration.querySelectorAll(".btn-dur").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (timerMode === "candle") {
+        timerTotalCandle = parseInt(btn.dataset.min, 10) * 60;
+        timerRemaining = timerTotalCandle;
+        updateTimerDisplay();
+        updateCandleHeight();
+      }
+    });
+  });
+}
+
+showTimerMode();
+if (timerDisplay) timerDisplay.textContent = "0:00";
+
 // ---------- Init ----------
 
 searchBtn.addEventListener("click", doSearch);
 searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+
+const resultsClose = document.getElementById("resultsClose");
+if (resultsClose && resultsPanel) {
+  resultsClose.addEventListener("click", () => {
+    resultsPanel.classList.add("collapsed");
+    resultsPanel.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("results-open");
+  });
+}
+
+if (recommendRefresh) {
+  recommendRefresh.addEventListener("click", () => refreshRecommendations());
+}
 
 (function init() {
   refreshShelf();

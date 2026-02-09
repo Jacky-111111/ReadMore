@@ -77,19 +77,54 @@
           <p id="searchError" class="error" aria-live="polite"></p>
         </section>
         <section class="results-panel panel collapsed" id="resultsPanel" aria-hidden="true">
-          <h2 class="section-title">Results</h2>
+          <div class="results-panel-header">
+            <h2 class="section-title">Results</h2>
+            <button type="button" class="btn btn-close-results" id="resultsClose" aria-label="Close results">×</button>
+          </div>
           <div id="resultsList" class="cards"></div>
           <p id="resultsEmpty" class="empty">Search for books to see results.</p>
         </section>
       </div>
       <aside class="col-recommend">
         <section class="recommend-panel panel">
-          <h2 class="section-title">Recommendations</h2>
+          <div class="recommend-panel-header">
+            <h2 class="section-title">Recommendations</h2>
+            <button type="button" class="btn btn-refresh-recommend" id="recommendRefresh" aria-label="Refresh recommendations" title="Refresh">↻</button>
+          </div>
           <p id="recommendMessage" class="empty">Add books to your collection to get personalized recommendations.</p>
           <div id="recommendList" class="cards"></div>
+          <div id="recommendPagination" class="recommend-pagination hidden"></div>
         </section>
       </aside>
     </div>
+    <section class="reading-timer-panel panel reading-timer-fixed" id="readingTimerFixed">
+      <h2 class="section-title">Reading timer</h2>
+      <div class="timer-scene-wrap">
+        <button type="button" class="btn btn-arrow" id="timerPrev" aria-label="Previous">‹</button>
+        <div class="timer-scene" id="timerScene">
+          <div class="pixel-fireplace" id="pixelFireplace">
+            <div class="fireplace-bricks"></div>
+            <div class="fireplace-flames">
+              <span class="flame f1"></span><span class="flame f2"></span><span class="flame f3"></span>
+              <span class="flame f4"></span><span class="flame f5"></span>
+            </div>
+          </div>
+          <div class="pixel-candle hidden" id="pixelCandle">
+            <div class="candle-flame"></div>
+            <div class="candle-wick"></div>
+            <div class="candle-wrap"><div class="candle-wax" id="candleWax"></div></div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-arrow" id="timerNext" aria-label="Next">›</button>
+      </div>
+      <div class="timer-duration hidden" id="timerDuration">
+        <button type="button" class="btn btn-dur active" data-min="10">10 min</button>
+        <button type="button" class="btn btn-dur" data-min="30">30 min</button>
+        <button type="button" class="btn btn-dur" data-min="60">1 hr</button>
+      </div>
+      <div class="timer-display" id="timerDisplay">0:00</div>
+      <button type="button" class="btn btn-primary btn-start" id="timerStart">Start reading</button>
+    </section>
     <div class="hearth"></div>
     <p class="copyright">© Jack Yu. Created with help of ChatGPT and Cursor.</p>
   </div>

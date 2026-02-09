@@ -172,12 +172,13 @@ async def api_recommend(body: RecommendProfile):
 
     scored.sort(key=lambda x: -x[0])
 
-    # Diversity: at most 6 per top subject in final list
-    MAX_PER_SUBJECT = 6
+    # Diversity: at most 12 per top subject in final list (for frontend pagination)
+    MAX_PER_SUBJECT = 12
+    MAX_RECOMMENDATIONS = 60
     subject_count: dict[str, int] = defaultdict(int)
     final: list[dict] = []
     for score, reasons, item in scored:
-        if len(final) >= 20:
+        if len(final) >= MAX_RECOMMENDATIONS:
             break
         first_sub = item.get("_first_subject") or (item.get("subjects") or [""])[0]
         if subject_count[first_sub] >= MAX_PER_SUBJECT:
@@ -189,3 +190,8 @@ async def api_recommend(body: RecommendProfile):
         final.append(item_copy)
 
     return {"recommendations": final}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
